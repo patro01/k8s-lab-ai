@@ -1,0 +1,93 @@
+# ─── K8s Lab CI/CD Pipeline (Self-Hosted) ────────────────
+# Runs on WSL self-hosted runner with existing Kind cluster
+# Validates configs, deploys workloads, runs smoke tests
+# ─────────────────────────────────────────────────────────
+
+name: K8s Cluster CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'kind-config.yaml'
+      - 'manifests/**'
+      - 'scripts/**'
+      - '.github/workflows/cluster-ci.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'kind-config.yaml'
+      - 'manifests/**'
+      - 'scripts/**'
+
+  workflow_dispatch:          # Manual trigger from GitHub UI
+
+jobs:
+  # ── STAGE 1: Validate ─────────────────────────────────
+  lint:
+    name: Validate Configs
+    runs-on: [self-hosted, wsl, kind]     # targets YOUR runner by labels
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint YAML files
+        run: |
+          pip install yamllint --quiet 2>/dev/null || true
+          yamllint -d relaxed kind-config.yaml
+          echo "✅ Kind config is valid"
+
+      - name: Validate K8s manifests (dry-run against live cluster)
+        run: |
+          for f in manifests/*.yaml; do
+            echo "Validating $f..."
+            kubectl apply --dry-run=server -f "$f"
+          done
+          echo "✅ All manifests are valid"
+
+  # ── STAGE 2: Deploy + Smoke Test ──────────────────────
+  deploy:
+    name: Deploy & Verify
+    runs-on: [self-hosted, wsl, kind]
+    needs: [lint]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Confirm cluster is reachable
+        run: |
+          kubectl config use-context kind-lab
+          kubectl get nodes
+          echo "✅ Cluster is reachable"
+
+      - name: Deploy workload
+        run: |
+          kubectl apply -f manifests/nginx-test.yaml
+          echo "✅ Manifests applied"
+
+      - name: Run smoke tests
+        run: |
+          chmod +x scripts/smoke-test.sh
+          ./scripts/smoke-test.sh
+
+      - name: Collect debug info on failure
+        if: failure()
+        run: |
+          echo "=== Node Status ==="
+          kubectl get nodes -o wide
+          echo "=== All Pods ==="
+          kubectl get pods -A
+          echo "=== Events ==="
+          kubectl get events --sort-by=.metadata.creationTimestamp | tail -30
+
+  # ── STAGE 3: Cleanup (only on PR, not main) ───────────
+  cleanup:
+    name: Cleanup Test Resources
+    runs-on: [self-hosted, wsl, kind]
+    needs: [deploy]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Remove smoke test workload
+        run: |
+          kubectl delete -f manifests/nginx-test.yaml --ignore-not-found
+          echo "✅ Test resources cleaned up"
