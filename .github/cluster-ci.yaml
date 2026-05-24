@@ -1,0 +1,124 @@
+# ─── K8s Lab CI/CD Pipeline (Self-Hosted on WSL) ────────
+# lint → create cluster → deploy workload → smoke test → cleanup
+# ─────────────────────────────────────────────────────────
+
+name: K8s Cluster CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'kind-config.yaml'
+      - 'manifests/**'
+      - 'scripts/**'
+      - '.github/workflows/cluster-ci.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'kind-config.yaml'
+      - 'manifests/**'
+      - 'scripts/**'
+  workflow_dispatch:
+
+jobs:
+  # ── STAGE 1: Validate ─────────────────────────────────
+  lint:
+    name: Validate Configs
+    runs-on: [self-hosted, wsl, kind]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint YAML files
+        run: |
+          pip install yamllint --quiet 2>/dev/null || true
+          yamllint -d relaxed kind-config.yaml
+          echo "✅ Kind config is valid"
+
+  # ── STAGE 2: Create Kind Cluster ──────────────────────
+  create-cluster:
+    name: Create Kind Cluster
+    runs-on: [self-hosted, wsl, kind]
+    needs: [lint]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Tear down existing cluster (if any)
+        run: kind delete cluster --name lab 2>/dev/null || true
+
+      - name: Create cluster from config
+        run: |
+          kind create cluster --name lab --config kind-config.yaml --wait 120s
+          echo "✅ Kind cluster 'lab' created"
+
+      - name: Verify nodes are ready
+        run: |
+          kubectl config use-context kind-lab
+          kubectl get nodes -o wide
+          echo "✅ All nodes registered"
+
+      - name: Wait for system pods
+        run: |
+          echo "Waiting for kube-system pods..."
+          kubectl wait --for=condition=Ready pods --all -n kube-system --timeout=120s
+          echo "✅ System pods are healthy"
+
+  # ── STAGE 3: Deploy Workload ──────────────────────────
+  deploy:
+    name: Deploy Workload
+    runs-on: [self-hosted, wsl, kind]
+    needs: [create-cluster]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Apply manifests
+        run: |
+          kubectl config use-context kind-lab
+          kubectl apply -f manifests/nginx-test.yaml
+          echo "✅ Workload applied"
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/nginx-smoke-test --timeout=90s
+          echo "✅ Deployment rolled out"
+
+  # ── STAGE 4: Smoke Test ───────────────────────────────
+  smoke-test:
+    name: Smoke Test
+    runs-on: [self-hosted, wsl, kind]
+    needs: [deploy]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run smoke tests
+        run: |
+          kubectl config use-context kind-lab
+          chmod +x scripts/smoke-test.sh
+          ./scripts/smoke-test.sh
+
+      - name: Collect debug info on failure
+        if: failure()
+        run: |
+          echo "=== Node Status ==="
+          kubectl get nodes -o wide
+          echo "=== All Pods ==="
+          kubectl get pods -A
+          echo "=== Events ==="
+          kubectl get events --sort-by=.metadata.creationTimestamp | tail -30
+
+  # ── STAGE 5: Cleanup (PR only) ────────────────────────
+  # cleanup:
+  #   name: Cleanup
+  #   runs-on: [self-hosted, wsl, kind]
+  #   needs: [smoke-test]
+  #   if: github.event_name == 'pull_request'
+  #   steps:
+  #     - name: Delete test workload
+  #       run: |
+  #         kubectl config use-context kind-lab
+  #         kubectl delete -f manifests/nginx-test.yaml --ignore-not-found
+  #         echo "✅ Test resources cleaned up"
+  #     # Cluster stays up — it's your lab environment

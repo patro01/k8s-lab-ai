@@ -1,0 +1,38 @@
+# kind-config.yaml
+# This file tells "kind" HOW to create the cluster.
+# It is NOT a Kubernetes manifest — kind reads it, not kubectl.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+nodes:
+  # Node 1: Control plane
+  # This runs: API server, etcd, scheduler, controller manager
+  # In production (Azure, AWS), this is managed by the cloud provider.
+  # Here, you're creating it yourself — so you can see everything.
+  - role: control-plane
+    extraPortMappings:
+      # Map port 30000-30100 from the kind container to your WSL host.
+      # This lets you access NodePort Services from your browser.
+      # Without this, NodePorts are trapped inside the Docker network.
+      - containerPort: 30080
+        hostPort: 30080
+        protocol: TCP
+      - containerPort: 30090
+        hostPort: 30090
+        protocol: TCP
+      - containerPort: 30030
+        hostPort: 30030
+        protocol: TCP
+
+  # Node 2: Worker
+  # This runs: kubelet, kube-proxy, containerd
+  # Your application pods will be scheduled here.
+  - role: worker
+    labels:
+      # Custom label — you'll use this later for nodeSelector exercises
+      node-purpose: workloads
+
+  # Node 3: Worker
+  - role: worker
+    labels:
+      node-purpose: workloads

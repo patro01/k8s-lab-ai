@@ -1,0 +1,7 @@
+# Ignore the entire runner folder and files
+/actions-runner/
+actions-runner/
+_work/
+*.tar.gz
+githubauth
+githubauth.pub
