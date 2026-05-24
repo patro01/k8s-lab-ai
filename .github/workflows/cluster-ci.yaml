@@ -45,13 +45,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Tear down existing cluster (if any)
-        run: kind delete cluster --name lab 2>/dev/null || true
-
-      - name: Create cluster from config
+      - name: Create cluster if missing
         run: |
-          kind create cluster --name lab --config kind-config.yaml --wait 120s
-          echo "✅ Kind cluster 'lab' created"
+          if kind get clusters | grep -q "^lab$"; then
+            echo "⚠️ Cluster 'lab' already exists. Skipping creation to preserve state."
+            kubectl config use-context kind-lab
+          else
+            echo "🚀 Creating fresh Kind cluster..."
+            kind create cluster --name lab --config kind-config.yaml --wait 120s
+          fi
 
       - name: Verify nodes are ready
         run: |

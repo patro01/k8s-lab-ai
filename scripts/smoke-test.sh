@@ -16,14 +16,23 @@ fi
 echo "PASS: All $NODES_TOTAL nodes are Ready"
 
 # Check system pods are running
+# Check system pods are running
 echo "Checking kube-system pods..."
-FAILING_PODS=$(kubectl get pods -n kube-system --no-headers | grep -v "Running\|Completed" | wc -l)
+
+# 1. Append "|| true" to prevent grep from crashing the script when 0 bad pods exist
+# 2. Use [[:space:]] or clear formatting to prevent unexpected text matching
+FAILING_PODS=$(kubectl get pods -n kube-system --no-headers | grep -v "Running\|Completed" | wc -l || true)
+
+# Remove any accidental whitespace or padding from wc -l output
+FAILING_PODS=$(echo "$FAILING_PODS" | tr -d ' ')
+
 if [ "$FAILING_PODS" -gt 0 ]; then
   echo "FAIL: $FAILING_PODS system pods are not running"
   kubectl get pods -n kube-system
   exit 1
 fi
 echo "PASS: All system pods are healthy"
+
 
 # Wait for smoke-test deployment rollout
 echo "Waiting for nginx-smoke-test deployment..."
