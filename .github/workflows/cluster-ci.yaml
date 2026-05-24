@@ -25,7 +25,7 @@ jobs:
   # ── STAGE 1: Validate ─────────────────────────────────
   lint:
     name: Validate Configs
-    runs-on: [self-hosted, wsl, kind]
+    runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
   # ── STAGE 2: Create Kind Cluster ──────────────────────
   create-cluster:
     name: Create Kind Cluster
-    runs-on: [self-hosted, wsl, kind]
+    runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
     needs: [lint]
     steps:
       - name: Checkout code
@@ -68,7 +68,7 @@ jobs:
   # ── STAGE 3: Deploy Workload ──────────────────────────
   deploy:
     name: Deploy Workload
-    runs-on: [self-hosted, wsl, kind]
+    runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
     needs: [create-cluster]
     steps:
       - name: Checkout code
@@ -88,7 +88,7 @@ jobs:
   # ── STAGE 4: Smoke Test ───────────────────────────────
   smoke-test:
     name: Smoke Test
-    runs-on: [self-hosted, wsl, kind]
+    runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
     needs: [deploy]
     steps:
       - name: Checkout code
@@ -113,7 +113,7 @@ jobs:
   # ── STAGE 5: Cleanup (PR only) ────────────────────────
   # cleanup:
   #   name: Cleanup
-  #   runs-on: [self-hosted, wsl, kind]
+  #   runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
   #   needs: [smoke-test]
   #   if: github.event_name == 'pull_request'
   #   steps:
