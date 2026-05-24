@@ -22,6 +22,7 @@ on:
 
 jobs:
   # ── STAGE 1: Validate ─────────────────────────────────
+  # ── STAGE 1: Validate ─────────────────────────────────
   lint:
     name: Validate Configs
     runs-on: [self-hosted, wsl, kind]
@@ -31,9 +32,9 @@ jobs:
 
       - name: Lint YAML files
         run: |
-          pip install yamllint --quiet 2>/dev/null || true
           yamllint -d relaxed kind-config.yaml
           echo "✅ Kind config is valid"
+
 
   # ── STAGE 2: Create Kind Cluster ──────────────────────
   create-cluster:
