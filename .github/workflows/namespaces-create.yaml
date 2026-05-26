@@ -9,13 +9,22 @@ jobs:
     runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
     # Add this environmental context block here:
     env:
+      # Replace 'YOUR_WSL_USERNAME' with your actual WSL Linux user string
       KUBECONFIG: /home/YOUR_WSL_USERNAME/.kube/config
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1 # Eliminates codeload tarball lookup reliance
 
+    steps:
+      # REPLACE THE WHOLE "USES: ACTIONS/CHECKOUT" BLOCK WITH THIS RAW GIT CLONE:
+      - name: Native Git Checkout Fallback
+        run: |
+          echo "Cleaning up old workspace builds..."
+          rm -rf * .git/
+          
+          echo "Cloning the repository via HTTPS..."
+          git clone --depth 1 https://github.com{{ github.repository }}.git .
+          
+          echo "Switching directly to the targeted execution branch..."
+          git checkout ${{ github.ref_name }}
+          
       - name: Create namespaces
         run: |
           kubectl config use-context kind-lab
