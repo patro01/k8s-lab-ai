@@ -13,16 +13,8 @@ jobs:
       KUBECONFIG: /home/patro01/.kube/config
 
     steps:
-      - name: Native Git Checkout Fallback
-        run: |
-          echo "Cleaning up old workspace builds..."
-          rm -rf * .git/ .github/
-          
-          echo "Cloning the repository via HTTPS..."
-          # Explicitly hardcode your URL here to avoid syntax translation errors
-          git clone --depth 1 "https://github.com" .
-          
-          echo "Switching directly to the targeted execution branch..."
+      - name: Checkout code
+        uses: actions/checkout@v4
           git checkout ${{ github.ref_name }}
 
       - name: Create namespaces
