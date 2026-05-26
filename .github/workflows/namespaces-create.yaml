@@ -7,9 +7,14 @@ jobs:
   namespaces:
     name: Create namespaces
     runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
+    # Add this environmental context block here:
+    env:
+      KUBECONFIG: /home/YOUR_WSL_USERNAME/.kube/config
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # Eliminates codeload tarball lookup reliance
 
       - name: Create namespaces
         run: |
