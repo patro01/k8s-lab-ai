@@ -10,7 +10,7 @@ jobs:
     # Add this environmental context block here:
     env:
       # FIXME: Run 'whoami' in WSL and replace YOUR_WSL_USERNAME with that exact value
-      KUBECONFIG: /home/YOUR_WSL_USERNAME/.kube/config
+      KUBECONFIG: /home/patro01/.kube/config
 
     steps:
       - name: Native Git Checkout Fallback
@@ -19,8 +19,8 @@ jobs:
           rm -rf * .git/ .github/
           
           echo "Cloning the repository via HTTPS..."
-          # Added the missing forward slash and corrected the context expansion format:
-          git clone --depth 1 "https://github.com{{ github.repository }}.git" .
+          # Explicitly hardcode your URL here to avoid syntax translation errors
+          git clone --depth 1 "https://github.com" .
           
           echo "Switching directly to the targeted execution branch..."
           git checkout ${{ github.ref_name }}
