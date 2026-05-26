@@ -1,0 +1,29 @@
+name: namespaces-create
+
+on:
+  workflow_dispatch:
+
+jobs:  
+  namespaces:
+    name: Create namespaces
+    runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
+
+    steps:
+      - name: Native Git Checkout Fallback
+        run: |
+          echo "Cleaning up old workspace builds..."
+          rm -rf * .git/ .github/
+          
+          echo "Cloning target branch directly..."
+          # This syntax uses native environment variables to avoid GitHub syntax bugs
+          git clone --depth 1 "https://github.com{{ github.repository }}.git" .
+          
+          echo "Checking out selected branch context..."
+          git checkout ${{ github.ref_name }}
+
+      - name: Create namespaces
+        run: |
+          # Automatically uses standard user pathing dynamically
+          export KUBECONFIG="$HOME/.kube/config"
+          kubectl config use-context kind-lab
+          kubectl apply -f manifests/namespaces.yaml
