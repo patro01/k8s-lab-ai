@@ -1,0 +1,28 @@
+# namespaces.yaml
+# Three namespaces that mimic a real organization's cluster layout.
+# Namespaces are logical boundaries — they share the same nodes
+# but have separate resource scopes.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app-prod
+  labels:
+    environment: production
+    team: platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app-staging
+  labels:
+    environment: staging
+    team: platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    environment: production
+    team: observability
