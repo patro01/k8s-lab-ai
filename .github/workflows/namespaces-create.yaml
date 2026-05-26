@@ -8,14 +8,10 @@ jobs:
     name: Create namespaces
     runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
     # Add this environmental context block here:
-    env:
-      # FIXME: Run 'whoami' in WSL and replace YOUR_WSL_USERNAME with that exact value
-      KUBECONFIG: /home/patro01/.kube/config
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-          git checkout ${{ github.ref_name }}
 
       - name: Create namespaces
         run: |
