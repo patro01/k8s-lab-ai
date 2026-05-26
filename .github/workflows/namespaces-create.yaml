@@ -1,0 +1,17 @@
+name: namespaces-create
+
+on:
+  workflow_dispatch:
+
+jobs:  
+  namespaces:
+    name: Create namespaces
+    runs-on: [self-hosted, wsl-k8s-lab-ai, Linux, X64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create namespaces
+        run: |
+          kubectl config use-context kind-lab
+          kubectl apply -f manifests/namespaces.yaml
