@@ -67,6 +67,7 @@ jobs:
           kubectl wait --for=condition=Ready pods --all -n kube-system --timeout=120s
           echo "✅ System pods are healthy"
 
+
   # ── STAGE 3: Deploy Workload ──────────────────────────
   deploy:
     name: Deploy Workload
